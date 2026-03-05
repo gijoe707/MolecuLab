@@ -1,0 +1,1876 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MolecuLab — Build Molecular Structures</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap');
+
+    :root {
+      --bg: #0a0e1a;
+      --surface: #111827;
+      --surface2: #1a2235;
+      --border: #2a3550;
+      --text: #e8f0fe;
+      --muted: #6b7fa3;
+      --accent: #00d4ff;
+      --accent2: #ff6b6b;
+      --green: #00ff9d;
+      --yellow: #ffd166;
+      --purple: #b388ff;
+      --nav-w: 236px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(0, 212, 255, .25) 0%, transparent 100%),
+        radial-gradient(1px 1px at 80% 10%, rgba(255, 255, 255, .15) 0%, transparent 100%),
+        radial-gradient(1px 1px at 50% 70%, rgba(179, 136, 255, .25) 0%, transparent 100%),
+        radial-gradient(1px 1px at 10% 80%, rgba(0, 255, 157, .15) 0%, transparent 100%),
+        radial-gradient(1px 1px at 90% 60%, rgba(255, 107, 107, .15) 0%, transparent 100%);
+    }
+
+    /* HEADER */
+    header {
+      flex-shrink: 0;
+      position: relative;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 22px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(10, 14, 26, .97);
+      backdrop-filter: blur(12px);
+    }
+
+    .logo {
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: -.5px;
+    }
+
+    .logo span {
+      color: var(--accent);
+    }
+
+    .level-badge {
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      color: #000;
+      font-weight: 700;
+      font-size: .7rem;
+      padding: 3px 11px;
+      border-radius: 20px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .score-display {
+      font-family: 'Space Mono', monospace;
+      font-size: .82rem;
+      color: var(--yellow);
+    }
+
+    .score-display span {
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    /* APP BODY */
+    .app-body {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* LEFT NAV */
+    .left-nav {
+      width: var(--nav-w);
+      flex-shrink: 0;
+      border-right: 1px solid var(--border);
+      background: rgba(10, 14, 26, .92);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .nav-header {
+      padding: 12px 14px 9px;
+      border-bottom: 1px solid var(--border);
+      font-size: .68rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-family: 'Space Mono', monospace;
+      flex-shrink: 0;
+    }
+
+    .nav-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px 0;
+    }
+
+    .nav-module {}
+
+    .nav-module-header {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 12px 6px;
+      cursor: pointer;
+      user-select: none;
+      transition: background .15s;
+    }
+
+    .nav-module-header:hover {
+      background: rgba(0, 212, 255, .05);
+    }
+
+    .nav-toggle {
+      font-size: .6rem;
+      color: var(--muted);
+      transition: transform .2s;
+      flex-shrink: 0;
+    }
+
+    .nav-module.open .nav-toggle {
+      transform: rotate(90deg);
+    }
+
+    .nav-module-name {
+      flex: 1;
+      font-weight: 700;
+      font-size: .88rem;
+    }
+
+    .nav-module-stars {
+      font-size: .7rem;
+      color: var(--yellow);
+      flex-shrink: 0;
+      letter-spacing: -1px;
+    }
+
+    .nav-module-tag {
+      font-size: .62rem;
+      font-family: 'Space Mono', monospace;
+      padding: 2px 6px;
+      border-radius: 8px;
+      background: var(--surface2);
+      color: var(--muted);
+    }
+
+    .nav-exercises {
+      display: none;
+    }
+
+    .nav-module.open .nav-exercises {
+      display: block;
+    }
+
+    .nav-ex {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 12px 7px 28px;
+      cursor: pointer;
+      transition: all .15s;
+      border-left: 2px solid transparent;
+      font-size: .83rem;
+    }
+
+    .nav-ex:hover {
+      background: rgba(0, 212, 255, .06);
+    }
+
+    .nav-ex.active {
+      background: rgba(0, 212, 255, .1);
+      border-left-color: var(--accent);
+    }
+
+    .nav-ex.done {
+      border-left-color: var(--green);
+    }
+
+    .nav-ex-name {
+      flex: 1;
+      line-height: 1.3;
+    }
+
+    .nav-ex-formula {
+      font-family: 'Space Mono', monospace;
+      font-size: .68rem;
+      color: var(--muted);
+      display: block;
+    }
+
+    .nav-ex-stars {
+      font-size: .65rem;
+      color: var(--yellow);
+      flex-shrink: 0;
+      letter-spacing: -1px;
+    }
+
+    .nav-done-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      flex-shrink: 0;
+      display: none;
+    }
+
+    .nav-ex.done .nav-done-dot {
+      display: block;
+    }
+
+    /* MAIN AREA */
+    .main-area {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 252px 1fr 252px;
+      overflow: hidden;
+    }
+
+    /* SIDEBARS */
+    .sidebar {
+      padding: 14px 12px;
+      border-right: 1px solid var(--border);
+      background: rgba(17, 24, 39, .75);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 13px;
+    }
+
+    .sidebar-right {
+      border-right: none;
+      border-left: 1px solid var(--border);
+    }
+
+    .panel-title {
+      font-size: .68rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 5px;
+      font-family: 'Space Mono', monospace;
+    }
+
+    /* TARGET CARD */
+    .target-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      padding: 13px;
+      position: relative;
+      overflow: hidden;
+      transition: box-shadow .3s;
+    }
+
+    .target-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--purple));
+    }
+
+    .molecule-name {
+      font-size: 1.28rem;
+      font-weight: 800;
+      margin-bottom: 1px;
+    }
+
+    .molecule-formula {
+      font-family: 'Space Mono', monospace;
+      font-size: 1.05rem;
+      color: var(--accent);
+      margin-bottom: 5px;
+    }
+
+    .molecule-desc {
+      font-size: .82rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .hint-btn {
+      margin-top: 9px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--yellow);
+      font-family: 'Space Mono', monospace;
+      font-size: .74rem;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all .2s;
+      width: 100%;
+    }
+
+    .hint-btn:hover {
+      background: rgba(255, 209, 102, .1);
+      border-color: var(--yellow);
+    }
+
+    .hint-text {
+      display: none;
+      margin-top: 7px;
+      font-size: .8rem;
+      color: var(--yellow);
+      background: rgba(255, 209, 102, .07);
+      padding: 8px;
+      border-radius: 6px;
+      line-height: 1.5;
+    }
+
+    .hint-text.show {
+      display: block;
+    }
+
+    @keyframes flash-ok {
+      0% {
+        box-shadow: 0 0 0 0 rgba(0, 255, 157, .9);
+      }
+
+      100% {
+        box-shadow: 0 0 0 22px rgba(0, 255, 157, 0);
+      }
+    }
+
+    @keyframes flash-err {
+      0% {
+        box-shadow: 0 0 0 0 rgba(255, 107, 107, .8);
+      }
+
+      100% {
+        box-shadow: 0 0 0 16px rgba(255, 107, 107, 0);
+      }
+    }
+
+    .target-card.anim-ok {
+      animation: flash-ok .6s ease-out;
+    }
+
+    .target-card.anim-err {
+      animation: flash-err .4s ease-out;
+    }
+
+    /* ATOM PALETTE */
+    .atom-palette {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .atom-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 6px 9px;
+      cursor: pointer;
+      transition: all .18s;
+      text-align: left;
+      width: 100%;
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+    }
+
+    .atom-btn:hover {
+      border-color: var(--accent);
+      background: rgba(0, 212, 255, .05);
+      transform: translateX(3px);
+    }
+
+    .atom-btn.selected {
+      border-color: var(--accent);
+      background: rgba(0, 212, 255, .1);
+      box-shadow: 0 0 10px rgba(0, 212, 255, .2);
+    }
+
+    .atom-btn.disabled {
+      opacity: .3;
+      cursor: not-allowed;
+    }
+
+    .atom-btn.disabled:hover {
+      transform: none;
+      border-color: var(--border);
+      background: var(--surface2);
+    }
+
+    .atom-circle {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: .85rem;
+      flex-shrink: 0;
+      box-shadow: 0 0 7px rgba(0, 0, 0, .5);
+    }
+
+    .atom-info {
+      flex: 1;
+    }
+
+    .atom-symbol {
+      font-weight: 700;
+      font-size: .92rem;
+    }
+
+    .atom-fullname {
+      font-size: .72rem;
+      color: var(--muted);
+    }
+
+    .atom-valence {
+      font-family: 'Space Mono', monospace;
+      font-size: .68rem;
+      color: var(--accent);
+    }
+
+    /* BOND SELECTOR */
+    .bond-selector {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+    }
+
+    .bond-btn {
+      padding: 7px 3px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      font-size: .7rem;
+      cursor: pointer;
+      transition: all .18s;
+      text-align: center;
+    }
+
+    .bond-btn:hover {
+      border-color: var(--green);
+      background: rgba(0, 255, 157, .05);
+    }
+
+    .bond-btn.selected {
+      border-color: var(--green);
+      background: rgba(0, 255, 157, .1);
+      color: var(--green);
+    }
+
+    .bond-btn.high:hover {
+      border-color: var(--accent);
+      background: rgba(0, 212, 255, .05);
+    }
+
+    .bond-btn.high.selected {
+      border-color: var(--accent);
+      background: rgba(0, 212, 255, .1);
+      color: var(--accent);
+    }
+
+    .bond-visual {
+      font-size: .95rem;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .bond-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 1.5px solid var(--accent);
+      color: var(--accent);
+      font-size: .65rem;
+      font-weight: 700;
+      margin: 0 auto 3px;
+      background: rgba(0, 212, 255, .08);
+    }
+
+    /* CANVAS AREA */
+    .canvas-area {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .canvas-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 7px 12px;
+      flex-shrink: 0;
+      border-bottom: 1px solid var(--border);
+      background: rgba(17, 24, 39, .92);
+      flex-wrap: wrap;
+    }
+
+    .tbtn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 5px 11px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'Space Mono', monospace;
+      font-size: .72rem;
+      transition: all .18s;
+      white-space: nowrap;
+    }
+
+    .tbtn:hover {
+      border-color: var(--accent2);
+      color: var(--accent2);
+    }
+
+    .tbtn.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(0, 212, 255, .1);
+    }
+
+    .tsep {
+      width: 1px;
+      height: 20px;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+
+    .zoom-group {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .zbtn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 26px;
+      height: 26px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all .18s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Space Mono', monospace;
+    }
+
+    .zbtn:hover {
+      border-color: var(--purple);
+      color: var(--purple);
+    }
+
+    .zlabel {
+      font-family: 'Space Mono', monospace;
+      font-size: .68rem;
+      color: var(--muted);
+      min-width: 38px;
+      text-align: center;
+    }
+
+    .check-btn {
+      margin-left: auto;
+      background: linear-gradient(135deg, #00d4ff1a, #b388ff1a);
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 700;
+      padding: 5px 14px;
+    }
+
+    .check-btn:hover {
+      background: linear-gradient(135deg, #00d4ff33, #b388ff33);
+      box-shadow: 0 0 14px rgba(0, 212, 255, .3);
+      color: var(--text);
+      border-color: var(--accent);
+    }
+
+    #mol-canvas {
+      flex: 1;
+      display: block;
+      cursor: crosshair;
+    }
+
+    .canvas-hint {
+      position: absolute;
+      bottom: 9px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Space Mono', monospace;
+      font-size: .68rem;
+      color: var(--muted);
+      background: rgba(17, 24, 39, .88);
+      padding: 5px 14px;
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    /* AUTO-VALIDATE TOAST */
+    .auto-toast {
+      position: absolute;
+      top: 50px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-8px);
+      background: rgba(0, 255, 157, .13);
+      border: 1px solid var(--green);
+      color: var(--green);
+      font-family: 'Space Mono', monospace;
+      font-size: .76rem;
+      padding: 6px 18px;
+      border-radius: 18px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .3s, transform .3s;
+      z-index: 50;
+      white-space: nowrap;
+    }
+
+    .auto-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* FEEDBACK OVERLAY */
+    .feedback-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(10, 14, 26, .93);
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .3s;
+    }
+
+    .feedback-overlay.show {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .fb-icon {
+      font-size: 4.5rem;
+      margin-bottom: 12px;
+      animation: pop .4s cubic-bezier(.34, 1.56, .64, 1);
+    }
+
+    @keyframes pop {
+      from {
+        transform: scale(0);
+      }
+
+      to {
+        transform: scale(1);
+      }
+    }
+
+    .fb-title {
+      font-size: 2rem;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .fb-title.correct {
+      color: var(--green);
+    }
+
+    .fb-title.wrong {
+      color: var(--accent2);
+    }
+
+    .fb-msg {
+      font-size: .92rem;
+      color: var(--muted);
+      text-align: center;
+      max-width: 360px;
+      line-height: 1.6;
+      margin-bottom: 22px;
+    }
+
+    .next-btn {
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      color: #000;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 11px 28px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform .2s, box-shadow .2s;
+    }
+
+    .next-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 22px rgba(0, 212, 255, .4);
+    }
+
+    /* RIGHT PANEL */
+    .valence-table {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      overflow: hidden;
+    }
+
+    .valence-row {
+      display: flex;
+      align-items: center;
+      padding: 6px 11px;
+      border-bottom: 1px solid var(--border);
+      gap: 7px;
+    }
+
+    .valence-row:last-child {
+      border-bottom: none;
+    }
+
+    .v-atom {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: .75rem;
+      flex-shrink: 0;
+    }
+
+    .v-name {
+      flex: 1;
+      color: var(--muted);
+      font-size: .8rem;
+    }
+
+    .v-val {
+      font-family: 'Space Mono', monospace;
+      color: var(--yellow);
+      font-size: .72rem;
+    }
+
+    .progress-bar-wrap {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      overflow: hidden;
+      height: 7px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--purple));
+      transition: width .5s ease;
+    }
+
+    .progress-label {
+      font-family: 'Space Mono', monospace;
+      font-size: .7rem;
+      color: var(--muted);
+      margin-top: 4px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .instructions {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 11px;
+      font-size: .8rem;
+      line-height: 1.75;
+      color: var(--muted);
+    }
+
+    .instructions strong {
+      color: var(--text);
+    }
+
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+
+    @keyframes float-up {
+      from {
+        transform: translateY(0) rotate(0deg);
+        opacity: 1;
+      }
+
+      to {
+        transform: translateY(-200px) rotate(720deg);
+        opacity: 0;
+      }
+    }
+
+    .confetti-piece {
+      position: absolute;
+      width: 7px;
+      height: 7px;
+      border-radius: 2px;
+      animation: float-up 1.5s ease forwards;
+      pointer-events: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="logo">Molecu<span>Lab</span></div>
+    <div id="level-badge" class="level-badge">Level 1 — Basics</div>
+    <div class="score-display">Score: <span id="score-val">0</span></div>
+  </header>
+
+  <div class="app-body">
+
+    <!-- LEFT NAV -->
+    <nav class="left-nav">
+      <div class="nav-header">📚 Modules &amp; Exercises</div>
+      <div class="nav-scroll" id="nav-scroll"></div>
+    </nav>
+
+    <div class="main-area">
+
+      <!-- LEFT SIDEBAR -->
+      <div class="sidebar">
+        <div>
+          <div class="panel-title">Current Molecule</div>
+          <div class="target-card" id="target-card">
+            <div class="molecule-name" id="mol-name">Water</div>
+            <div class="molecule-formula" id="mol-formula">H₂O</div>
+            <div class="molecule-desc" id="mol-desc"></div>
+            <button class="hint-btn" onclick="toggleHint()">💡 Show Hint</button>
+            <div class="hint-text" id="hint-text"></div>
+          </div>
+        </div>
+        <div>
+          <div class="panel-title">Atom Palette</div>
+          <div class="atom-palette" id="atom-palette"></div>
+        </div>
+        <div>
+          <div class="panel-title">Bond Type</div>
+          <div class="bond-selector">
+            <button class="bond-btn selected" onclick="selectBond(1,this)"><span
+                class="bond-visual">—</span>Single</button>
+            <button class="bond-btn" onclick="selectBond(2,this)"><span class="bond-visual">=</span>Double</button>
+            <button class="bond-btn" onclick="selectBond(3,this)"><span class="bond-visual">≡</span>Triple</button>
+            <button class="bond-btn high" onclick="selectBond(4,this)"><span
+                class="bond-badge">4</span>Quadruple</button>
+            <button class="bond-btn high" onclick="selectBond(5,this)"><span
+                class="bond-badge">5</span>Quintuple</button>
+            <button class="bond-btn high" onclick="selectBond(6,this)"><span
+                class="bond-badge">6</span>Sextuple</button>
+            <button class="bond-btn high" onclick="selectBond(7,this)"><span
+                class="bond-badge">7</span>Septuple</button>
+            <button class="bond-btn high" onclick="selectBond(8,this)"><span class="bond-badge">8</span>Octuple</button>
+            <button class="bond-btn high" onclick="selectBond(9,this)"><span class="bond-badge">9</span>Nonuple</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CANVAS -->
+      <div class="canvas-area">
+        <div class="canvas-toolbar">
+          <button class="tbtn active" id="btn-place" onclick="setMode('place')">⬤ Place</button>
+          <button class="tbtn" id="btn-bond" onclick="setMode('bond')">— Bond</button>
+          <button class="tbtn" id="btn-delete" onclick="setMode('delete')">✕ Delete</button>
+          <div class="tsep"></div>
+          <button class="tbtn" onclick="alignMolecule()" title="Auto-arrange atoms">⊞ Align</button>
+          <button class="tbtn" onclick="fitToCanvas()" title="Fit to screen">⤢ Fit</button>
+          <div class="tsep"></div>
+          <div class="zoom-group">
+            <button class="zbtn" onclick="zoomBy(-0.15)">−</button>
+            <span class="zlabel" id="zoom-label">100%</span>
+            <button class="zbtn" onclick="zoomBy(0.15)">+</button>
+          </div>
+          <div class="tsep"></div>
+          <button class="tbtn" onclick="clearCanvas()">🗑 Clear</button>
+          <button class="tbtn check-btn" onclick="checkMolecule()">✓ Check</button>
+        </div>
+
+        <canvas id="mol-canvas"></canvas>
+        <div class="canvas-hint" id="canvas-hint">Click canvas to place atom • Click placed atom to start drawing a bond
+        </div>
+        <div class="auto-toast" id="auto-toast">✓ Looks correct — validating…</div>
+
+        <div class="feedback-overlay" id="feedback">
+          <div class="fb-icon" id="fb-icon">🎉</div>
+          <div class="fb-title correct" id="fb-title">Correct!</div>
+          <div class="fb-msg" id="fb-msg"></div>
+          <button class="next-btn" onclick="nextMolecule()">Next Molecule →</button>
+        </div>
+      </div>
+
+      <!-- RIGHT SIDEBAR -->
+      <div class="sidebar sidebar-right">
+        <div>
+          <div class="panel-title">Progress</div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+          </div>
+          <div class="progress-label"><span id="prog-cur">0</span><span id="prog-total">/ 0 done</span></div>
+        </div>
+        <div>
+          <div class="panel-title">Valence Reference</div>
+          <div class="valence-table" id="valence-table"></div>
+        </div>
+        <div>
+          <div class="panel-title">How to Play</div>
+          <div class="instructions">
+            <strong>Drag atom</strong> — click and drag any atom to reposition it (bonds follow)<br>
+            <strong>Pan canvas</strong> — click and drag on empty space to scroll the view<br>
+            <strong>Place atoms</strong> — select element, click canvas<br>
+            <strong>Toggle bond</strong> — click any placed atom to instantly start bonding from it<br>
+            <strong>Draw bond</strong> — in Bond mode click atom → atom<br>
+            <strong>Delete</strong> — Delete mode → click atom or bond<br>
+            <strong>Align ⊞</strong> — auto-arranges atoms neatly<br>
+            <strong>Fit ⤢</strong> — zooms to fit your structure<br>
+            <strong>+ / −</strong> — zoom in / out<br>
+            <strong>Auto-check</strong> — validates as you build ✓
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // ══════════════════════════════════════════════
+    // DATA
+    // ══════════════════════════════════════════════
+    const ATOMS = {
+      H: { symbol: 'H', name: 'Hydrogen', valence: 1, color: '#cccccc', textColor: '#111', radius: 18 },
+      C: { symbol: 'C', name: 'Carbon', valence: 4, color: '#555555', textColor: '#fff', radius: 22 },
+      O: { symbol: 'O', name: 'Oxygen', valence: 2, color: '#ee3333', textColor: '#fff', radius: 20 },
+      N: { symbol: 'N', name: 'Nitrogen', valence: 3, color: '#3377ff', textColor: '#fff', radius: 20 },
+      S: { symbol: 'S', name: 'Sulfur', valence: 2, color: '#ccbb00', textColor: '#111', radius: 22 },
+      Cl: { symbol: 'Cl', name: 'Chlorine', valence: 1, color: '#33cc33', textColor: '#111', radius: 22 },
+      Br: { symbol: 'Br', name: 'Bromine', valence: 1, color: '#993300', textColor: '#fff', radius: 22 },
+      P: { symbol: 'P', name: 'Phosphorus', valence: 5, color: '#ff7700', textColor: '#fff', radius: 22 },
+      F: { symbol: 'F', name: 'Fluorine', valence: 1, color: '#66ee66', textColor: '#111', radius: 18 },
+    };
+
+    const LEVELS = [
+      {
+        id: 0, name: 'Basics', tag: 'Inorganic', stars: 1, molecules: [
+          {
+            name: 'Water', formula: 'H₂O', stars: 1, hint: '1 Oxygen center, 2 Hydrogen atoms connected with single bonds.', desc: 'Bent geometry, polar covalent. Essential for life.', available: ['H', 'O'],
+            check: (at, bo) => { const o = at.filter(a => a.symbol === 'O'), h = at.filter(a => a.symbol === 'H'); if (o.length !== 1 || h.length !== 2) return false; const oi = o[0].id, hi = h.map(a => a.id); return bo.filter(b => (b.from === oi && hi.includes(b.to)) || (b.to === oi && hi.includes(b.from))).length === 2; }
+          },
+          {
+            name: 'Hydrogen Gas', formula: 'H₂', stars: 1, hint: 'Two Hydrogen atoms, one single bond between them.', desc: 'Lightest element. Used in fuel cells and rockets.', available: ['H'],
+            check: (at, bo) => { const h = at.filter(a => a.symbol === 'H'); if (h.length !== 2) return false; return bo.some(b => b.order === 1 && ((b.from === h[0].id && b.to === h[1].id) || (b.from === h[1].id && b.to === h[0].id))); }
+          },
+          {
+            name: 'Molecular Oxygen', formula: 'O₂', stars: 1, hint: 'Two Oxygen atoms connected by a double bond (=).', desc: 'Diatomic oxygen. Essential for aerobic respiration.', available: ['O'],
+            check: (at, bo) => { const o = at.filter(a => a.symbol === 'O'); if (o.length !== 2) return false; return bo.some(b => b.order === 2 && ((b.from === o[0].id && b.to === o[1].id) || (b.from === o[1].id && b.to === o[0].id))); }
+          },
+          {
+            name: 'Hydrogen Chloride', formula: 'HCl', stars: 1, hint: 'One H and one Cl, a single bond between them.', desc: 'Forms hydrochloric acid in water. Strong acid.', available: ['H', 'Cl'],
+            check: (at, bo) => { return at.some(a => a.symbol === 'H') && at.some(a => a.symbol === 'Cl') && bo.length === 1 && bo[0].order === 1; }
+          },
+        ]
+      },
+      {
+        id: 1, name: 'Simple Compounds', tag: 'Inorganic', stars: 1, molecules: [
+          {
+            name: 'Carbon Dioxide', formula: 'CO₂', stars: 2, hint: '1 Carbon center, double bonded to 2 Oxygens (linear shape).', desc: 'Linear molecule. C=O double bonds. Greenhouse gas. Key in photosynthesis.', available: ['C', 'O'],
+            check: (at, bo) => { const c = at.filter(a => a.symbol === 'C'), o = at.filter(a => a.symbol === 'O'); if (c.length !== 1 || o.length !== 2) return false; const ci = c[0].id; return bo.filter(b => b.order === 2 && (b.from === ci || b.to === ci)).length === 2; }
+          },
+          {
+            name: 'Ammonia', formula: 'NH₃', stars: 2, hint: '1 Nitrogen, 3 Hydrogen single bonds. Trigonal pyramidal.', desc: 'Trigonal pyramidal. Lone pair on N → weak base.', available: ['N', 'H'],
+            check: (at, bo) => { const n = at.filter(a => a.symbol === 'N'), h = at.filter(a => a.symbol === 'H'); if (n.length !== 1 || h.length !== 3) return false; const ni = n[0].id; return bo.filter(b => (b.from === ni || b.to === ni) && b.order === 1).length === 3; }
+          },
+          {
+            name: 'Hydrogen Sulfide', formula: 'H₂S', stars: 2, hint: '1 Sulfur bonded to 2 Hydrogens. Like water but larger.', desc: 'Bent shape. Rotten egg smell. Weak acid.', available: ['H', 'S'],
+            check: (at, bo) => { const s = at.filter(a => a.symbol === 'S'), h = at.filter(a => a.symbol === 'H'); if (s.length !== 1 || h.length !== 2) return false; const si = s[0].id; return bo.filter(b => (b.from === si || b.to === si) && b.order === 1).length === 2; }
+          },
+          {
+            name: 'Nitrogen Gas', formula: 'N₂', stars: 2, hint: 'Two Nitrogen atoms connected by a triple bond (≡).', desc: '78% of atmosphere. Very stable triple bond.', available: ['N'],
+            check: (at, bo) => { const n = at.filter(a => a.symbol === 'N'); if (n.length !== 2) return false; return bo.some(b => b.order === 3 && ((b.from === n[0].id && b.to === n[1].id) || (b.from === n[1].id && b.to === n[0].id))); }
+          },
+        ]
+      },
+      {
+        id: 2, name: 'Organic Basics', tag: 'Organic', stars: 2, molecules: [
+          {
+            name: 'Methane', formula: 'CH₄', stars: 1, hint: '1 Carbon bonded to 4 Hydrogens. All single bonds. Tetrahedral.', desc: 'Simplest alkane. Tetrahedral geometry. Main component of natural gas.', available: ['C', 'H'],
+            check: (at, bo) => { const c = at.filter(a => a.symbol === 'C'), h = at.filter(a => a.symbol === 'H'); if (c.length !== 1 || h.length !== 4) return false; const ci = c[0].id; return bo.filter(b => (b.from === ci || b.to === ci) && b.order === 1).length === 4; }
+          },
+          {
+            name: 'Ethane', formula: 'C₂H₆', stars: 2, hint: '2 Carbons with a C–C single bond. Each C bonded to 3 H.', desc: 'Simplest C–C bond. Saturated hydrocarbon.', available: ['C', 'H'],
+            check: (at, bo) => { const c = at.filter(a => a.symbol === 'C'), h = at.filter(a => a.symbol === 'H'); if (c.length !== 2 || h.length !== 6) return false; const ci = c.map(a => a.id); return bo.some(b => b.order === 1 && ci.includes(b.from) && ci.includes(b.to)); }
+          },
+          {
+            name: 'Ethylene', formula: 'C₂H₄', stars: 2, hint: '2 Carbons with a C=C double bond, each bonded to 2 Hydrogens.', desc: 'Simplest alkene. Planar. Plant hormone, industrial monomer.', available: ['C', 'H'],
+            check: (at, bo) => { const c = at.filter(a => a.symbol === 'C'), h = at.filter(a => a.symbol === 'H'); if (c.length !== 2 || h.length !== 4) return false; const ci = c.map(a => a.id); return bo.some(b => b.order === 2 && ci.includes(b.from) && ci.includes(b.to)); }
+          },
+          {
+            name: 'Acetylene', formula: 'C₂H₂', stars: 3, hint: '2 Carbons with a C≡C triple bond, one H on each end.', desc: 'Simplest alkyne. Linear. Used in oxy-acetylene welding.', available: ['C', 'H'],
+            check: (at, bo) => { const c = at.filter(a => a.symbol === 'C'), h = at.filter(a => a.symbol === 'H'); if (c.length !== 2 || h.length !== 2) return false; const ci = c.map(a => a.id); return bo.some(b => b.order === 3 && ci.includes(b.from) && ci.includes(b.to)); }
+          },
+        ]
+      },
+      {
+        id: 3, name: 'Functional Groups', tag: 'Organic', stars: 2, molecules: [
+          {
+            name: 'Methanol', formula: 'CH₃OH', stars: 2, hint: 'C bonded to 3H and one O; O bonded to 1H. This is the –OH group.', desc: 'Simplest alcohol. –OH functional group. Toxic.', available: ['C', 'H', 'O'],
+            check: (at, bo) => { const c = at.filter(a => a.symbol === 'C'), o = at.filter(a => a.symbol === 'O'), h = at.filter(a => a.symbol === 'H'); if (c.length !== 1 || o.length !== 1 || h.length !== 4) return false; const ci = c[0].id, oi = o[0].id; const co = bo.some(b => (b.from === ci && b.to === oi) || (b.from === oi && b.to === ci)); return co && bo.filter(b => (b.from === ci || b.to === ci) && b.order === 1).length === 4; }
+          },
+          {
+            name: 'Formaldehyde', formula: 'HCHO', stars: 2, hint: 'C double bonded to O, single bonded to 2 H. Aldehyde –CHO.', desc: 'Simplest aldehyde. Carbonyl C=O group. Preservative.', available: ['C', 'H', 'O'],
+            check: (at, bo) => { const c = at.filter(a => a.symbol === 'C'), o = at.filter(a => a.symbol === 'O'), h = at.filter(a => a.symbol === 'H'); if (c.length !== 1 || o.length !== 1 || h.length !== 2) return false; const ci = c[0].id, oi = o[0].id; return bo.some(b => b.order === 2 && ((b.from === ci && b.to === oi) || (b.from === oi && b.to === ci))); }
+          },
+          {
+            name: 'Methylamine', formula: 'CH₃NH₂', stars: 2, hint: 'C bonded to 3H and N; N bonded to 2H. Amine –NH₂ group.', desc: 'Simplest amine. –NH₂ functional group.', available: ['C', 'H', 'N'],
+            check: (at, bo) => { const c = at.filter(a => a.symbol === 'C'), n = at.filter(a => a.symbol === 'N'), h = at.filter(a => a.symbol === 'H'); if (c.length !== 1 || n.length !== 1 || h.length !== 5) return false; const ci = c[0].id, ni = n[0].id; return bo.some(b => (b.from === ci && b.to === ni) || (b.from === ni && b.to === ci)); }
+          },
+          {
+            name: 'Chloromethane', formula: 'CH₃Cl', stars: 2, hint: '1 C bonded to 3H and 1 Cl. All single bonds. Tetrahedral.', desc: 'Alkyl halide. Haloalkane. Used as refrigerant.', available: ['C', 'H', 'Cl'],
+            check: (at, bo) => { const c = at.filter(a => a.symbol === 'C'), h = at.filter(a => a.symbol === 'H'), cl = at.filter(a => a.symbol === 'Cl'); if (c.length !== 1 || h.length !== 3 || cl.length !== 1) return false; const ci = c[0].id; return bo.filter(b => (b.from === ci || b.to === ci) && b.order === 1).length === 4; }
+          },
+        ]
+      },
+      {
+        id: 4, name: 'Advanced Organic', tag: 'Advanced', stars: 3, molecules: [
+          {
+            name: 'Ethanol', formula: 'C₂H₅OH', stars: 2, hint: '2 Carbons, C–C single bond. One C bonded to –OH. Fill rest with H.', desc: 'Common alcohol. –OH group. Antiseptic and beverage.', available: ['C', 'H', 'O'],
+            check: (at, bo) => { const c = at.filter(a => a.symbol === 'C'), o = at.filter(a => a.symbol === 'O'), h = at.filter(a => a.symbol === 'H'); if (c.length !== 2 || o.length !== 1 || h.length !== 6) return false; const ci = c.map(a => a.id), oi = o[0].id; const cc = bo.some(b => b.order === 1 && ci.includes(b.from) && ci.includes(b.to)); const co = bo.some(b => (ci.includes(b.from) && b.to === oi) || (b.from === oi && ci.includes(b.to))); return cc && co; }
+          },
+          {
+            name: 'Acetic Acid', formula: 'CH₃COOH', stars: 3, hint: '2 Carbons. One has C=O and C–OH (carboxyl –COOH). Other has 3H.', desc: 'Simplest carboxylic acid. Found in vinegar. –COOH group.', available: ['C', 'H', 'O'],
+            check: (at, bo) => { const c = at.filter(a => a.symbol === 'C'), o = at.filter(a => a.symbol === 'O'), h = at.filter(a => a.symbol === 'H'); if (c.length !== 2 || o.length !== 2 || h.length !== 4) return false; const ci = c.map(a => a.id), oi = o.map(a => a.id); const cc = bo.some(b => b.order === 1 && ci.includes(b.from) && ci.includes(b.to)); const db = bo.some(b => b.order === 2 && (ci.includes(b.from) || ci.includes(b.to)) && (oi.includes(b.from) || oi.includes(b.to))); return cc && db; }
+          },
+          {
+            name: 'Propane', formula: 'C₃H₈', stars: 2, hint: '3 Carbons in a chain (C–C–C). Fill each C valence with H atoms.', desc: 'Three-carbon alkane. LPG cooking gas.', available: ['C', 'H'],
+            check: (at, bo) => { const c = at.filter(a => a.symbol === 'C'), h = at.filter(a => a.symbol === 'H'); if (c.length !== 3 || h.length !== 8) return false; const ci = c.map(a => a.id); return bo.filter(b => b.order === 1 && ci.includes(b.from) && ci.includes(b.to)).length === 2; }
+          },
+          {
+            name: 'Dimethyl Ether', formula: 'CH₃OCH₃', stars: 3, hint: '2 Carbons each bonded to central O, each C has 3H. Ether C–O–C.', desc: 'Ether linkage (C–O–C). Isomer of ethanol. Aerosol propellant.', available: ['C', 'H', 'O'],
+            check: (at, bo) => { const c = at.filter(a => a.symbol === 'C'), o = at.filter(a => a.symbol === 'O'), h = at.filter(a => a.symbol === 'H'); if (c.length !== 2 || o.length !== 1 || h.length !== 6) return false; const ci = c.map(a => a.id), oi = o[0].id; const coBo = bo.filter(b => (ci.includes(b.from) && b.to === oi) || (b.from === oi && ci.includes(b.to))); return coBo.length === 2; }
+          },
+        ]
+      },
+    ];
+
+    // ══════════════════════════════════════════════
+    // STATE
+    // ══════════════════════════════════════════════
+    let S = {
+      levelIdx: 0, molIdx: 0, score: 0,
+      completed: new Set(),
+      atoms: [], bonds: [],
+      selectedAtomSymbol: 'H',
+      bondOrder: 1,
+      mode: 'place',
+      bondStart: null,
+      nextId: 1,
+      hoverAtom: null,
+      mouseX: undefined, mouseY: undefined,
+      zoom: 1, panX: 0, panY: 0,
+      autoValidated: false,
+      // drag state
+      dragAtom: null,       // atom being dragged
+      dragOffX: 0, dragOffY: 0,  // offset from atom center (world coords)
+      isDragging: false,    // true once we've moved enough to count as drag
+      mouseDownX: 0, mouseDownY: 0, // screen coords at mousedown
+      // pan state
+      isPanning: false,
+      panStartX: undefined, panStartY: undefined,
+      panOriginX: 0, panOriginY: 0,
+    };
+
+    // ══════════════════════════════════════════════
+    // CANVAS SETUP
+    // ══════════════════════════════════════════════
+    const canvas = document.getElementById('mol-canvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      const area = canvas.parentElement;
+      canvas.width = area.clientWidth;
+      canvas.height = area.clientHeight - 43;
+      draw();
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Coord transforms
+    const w2s = (wx, wy) => ({ x: wx * S.zoom + S.panX, y: wy * S.zoom + S.panY });
+    const s2w = (sx, sy) => ({ x: (sx - S.panX) / S.zoom, y: (sy - S.panY) / S.zoom });
+
+    // ══════════════════════════════════════════════
+    // DRAW
+    // ══════════════════════════════════════════════
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Grid
+      ctx.save();
+      ctx.strokeStyle = 'rgba(42,53,80,.3)'; ctx.lineWidth = 1;
+      const gs = 40 * S.zoom;
+      const ox = ((S.panX % gs) + gs) % gs, oy = ((S.panY % gs) + gs) % gs;
+      for (let x = ox; x < canvas.width; x += gs) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); }
+      for (let y = oy; y < canvas.height; y += gs) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
+      ctx.restore();
+
+      // Bonds
+      S.bonds.forEach(bond => {
+        const a = S.atoms.find(a => a.id === bond.from), b = S.atoms.find(a => a.id === bond.to);
+        if (!a || !b) return;
+        const as = w2s(a.x, a.y), bs = w2s(b.x, b.y);
+        drawBond(as.x, as.y, bs.x, bs.y, bond.order);
+      });
+
+      // Bond preview
+      if (S.bondStart !== null && S.mouseX !== undefined) {
+        const a = S.atoms.find(at => at.id === S.bondStart);
+        if (a) {
+          const as = w2s(a.x, a.y);
+          ctx.beginPath(); ctx.setLineDash([5, 5]);
+          ctx.strokeStyle = '#00ff9d'; ctx.lineWidth = 1.5; ctx.globalAlpha = .6;
+          ctx.moveTo(as.x, as.y); ctx.lineTo(S.mouseX, S.mouseY); ctx.stroke();
+          ctx.setLineDash([]); ctx.globalAlpha = 1;
+        }
+      }
+
+      // Atoms
+      S.atoms.forEach(atom => {
+        const info = ATOMS[atom.symbol];
+        const r = info.radius * S.zoom;
+        const s = w2s(atom.x, atom.y);
+        const isHover = S.hoverAtom === atom.id;
+        const isBondStart = S.bondStart === atom.id;
+
+        if (isHover || isBondStart) {
+          ctx.beginPath(); ctx.arc(s.x, s.y, r + 7, 0, Math.PI * 2);
+          ctx.strokeStyle = isBondStart ? '#00ff9d' : '#00d4ff';
+          ctx.lineWidth = 2;
+          ctx.globalAlpha = .45 + .3 * Math.sin(Date.now() / 200);
+          ctx.stroke(); ctx.globalAlpha = 1;
+        }
+
+        const gr = ctx.createRadialGradient(s.x - r * .2, s.y - r * .2, r * .08, s.x, s.y, r);
+        gr.addColorStop(0, lighten(info.color, 50)); gr.addColorStop(1, info.color);
+        ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
+        ctx.fillStyle = gr; ctx.fill();
+        ctx.strokeStyle = isBondStart ? '#00ff9d' : isHover ? '#00d4ff' : 'rgba(255,255,255,.2)';
+        ctx.lineWidth = (isHover || isBondStart) ? 2.5 : 1; ctx.stroke();
+
+        ctx.fillStyle = info.textColor;
+        const fs = Math.max(9, (atom.symbol.length > 1 ? 11 : 13) * S.zoom);
+        ctx.font = `bold ${fs}px 'Space Mono',monospace`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(atom.symbol, s.x, s.y);
+      });
+    }
+
+    function drawBond(x1, y1, x2, y2, order) {
+      const dx = x2 - x1, dy = y2 - y1, len = Math.sqrt(dx * dx + dy * dy);
+      if (len < 1) return;
+      const nx = -dy / len, ny = dx / len;
+      const g = 4 * S.zoom;
+
+      if (order <= 3) {
+        // Draw 1, 2, or 3 parallel lines — standard bond notation
+        const offs = order === 1 ? [0] : order === 2 ? [-g, g] : [-g * 1.6, 0, g * 1.6];
+        const cols = ['#8899bb', '#ffd166', '#b388ff'];
+        offs.forEach((off, i) => {
+          ctx.beginPath();
+          ctx.moveTo(x1 + nx * off, y1 + ny * off);
+          ctx.lineTo(x2 + nx * off, y2 + ny * off);
+          ctx.strokeStyle = order === 1 ? '#8899bb' : cols[i] || '#8899bb';
+          ctx.lineWidth = Math.max(1.5, 2.5 * S.zoom);
+          ctx.lineCap = 'round';
+          ctx.stroke();
+        });
+      } else {
+        // 4+ bonds: draw a bold central line + order-number badge at midpoint
+        // The badge is the standard chemistry shorthand for high bond orders
+        ctx.beginPath();
+        ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+        ctx.strokeStyle = '#00d4ff';
+        ctx.lineWidth = Math.max(3, 4 * S.zoom);
+        ctx.lineCap = 'round';
+        ctx.stroke();
+
+        // Midpoint badge — filled circle with bond order number
+        const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+        const br = Math.max(9, 11 * S.zoom);
+
+        ctx.beginPath();
+        ctx.arc(mx, my, br, 0, Math.PI * 2);
+        ctx.fillStyle = '#0a0e1a';
+        ctx.fill();
+        ctx.strokeStyle = '#00d4ff';
+        ctx.lineWidth = Math.max(1.5, 2 * S.zoom);
+        ctx.stroke();
+
+        ctx.fillStyle = '#00d4ff';
+        ctx.font = `bold ${Math.max(9, 11 * S.zoom)}px 'Space Mono',monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(order, mx, my);
+      }
+    }
+
+    function lighten(hex, amt) {
+      const n = parseInt(hex.replace('#', ''), 16);
+      return `rgb(${Math.min(255, (n >> 16) + amt)},${Math.min(255, ((n >> 8) & 0xff) + amt)},${Math.min(255, (n & 0xff) + amt)})`;
+    }
+
+    // Animate glow pulse + drag + pan
+    function animate() { if (S.hoverAtom !== null || S.bondStart !== null || S.isDragging || S.isPanning) draw(); requestAnimationFrame(animate); }
+    animate();
+
+    // ══════════════════════════════════════════════
+    // CANVAS EVENTS  (drag-to-move atom, pan canvas, click logic)
+    // ══════════════════════════════════════════════
+    const DRAG_THRESHOLD = 5; // px — below this is a click, above is a drag
+
+    canvas.addEventListener('mousedown', e => {
+      if (e.button !== 0) return;
+      const rect = canvas.getBoundingClientRect();
+      const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+      const hitAtom = atomAtScreen(sx, sy);
+
+      S.mouseDownX = sx; S.mouseDownY = sy;
+      S.isDragging = false;
+      S.isPanning = false;
+
+      if (hitAtom && S.mode !== 'delete') {
+        // Begin potential atom drag
+        const w = s2w(sx, sy);
+        S.dragAtom = hitAtom;
+        S.dragOffX = hitAtom.x - w.x;
+        S.dragOffY = hitAtom.y - w.y;
+      } else if (!hitAtom) {
+        // Begin potential canvas pan (all modes — pan empty space in delete mode too)
+        S.dragAtom = null;
+        S.panStartX = sx;
+        S.panStartY = sy;
+        S.panOriginX = S.panX;
+        S.panOriginY = S.panY;
+      } else {
+        S.dragAtom = null;
+      }
+    });
+
+    canvas.addEventListener('mousemove', e => {
+      const rect = canvas.getBoundingClientRect();
+      S.mouseX = e.clientX - rect.left;
+      S.mouseY = e.clientY - rect.top;
+
+      const moved = Math.hypot(S.mouseX - S.mouseDownX, S.mouseY - S.mouseDownY);
+
+      // ── Atom drag ──
+      if (S.dragAtom) {
+        if (!S.isDragging && moved > DRAG_THRESHOLD) S.isDragging = true;
+        if (S.isDragging) {
+          const w = s2w(S.mouseX, S.mouseY);
+          S.dragAtom.x = w.x + S.dragOffX;
+          S.dragAtom.y = w.y + S.dragOffY;
+          canvas.style.cursor = 'grabbing';
+          draw(); return;
+        }
+        // Haven't crossed threshold yet — still in hover state
+        const ha = atomAtScreen(S.mouseX, S.mouseY);
+        S.hoverAtom = ha ? ha.id : null;
+        canvas.style.cursor = 'grab';
+        draw(); return;
+      }
+
+      // ── Canvas pan (drag on empty space — works in all modes) ──
+      if (S.panStartX !== undefined) {
+        if (!S.isPanning && moved > DRAG_THRESHOLD) S.isPanning = true;
+        if (S.isPanning) {
+          S.panX = S.panOriginX + (S.mouseX - S.panStartX);
+          S.panY = S.panOriginY + (S.mouseY - S.panStartY);
+          canvas.style.cursor = 'grabbing';
+          draw(); return;
+        }
+      }
+
+      // ── Normal hover ──
+      const ha = atomAtScreen(S.mouseX, S.mouseY);
+      S.hoverAtom = ha ? ha.id : null;
+      if (S.mode === 'delete') canvas.style.cursor = (ha || bondAtScreen(S.mouseX, S.mouseY)) ? 'not-allowed' : 'default';
+      else if (ha) canvas.style.cursor = 'grab';
+      else canvas.style.cursor = S.mode === 'delete' ? 'default' : 'crosshair';
+      draw();
+    });
+
+    canvas.addEventListener('mouseup', e => {
+      if (e.button !== 0) return;
+
+      const wasDraggingAtom = S.isDragging && S.dragAtom;
+      const wasPanning = S.isPanning;
+
+      S.isDragging = false;
+      S.isPanning = false;
+      S.dragAtom = null;
+      S.panStartX = undefined;
+
+      if (wasDraggingAtom) { canvas.style.cursor = 'grab'; autoValidate(); return; }
+      if (wasPanning) { canvas.style.cursor = 'crosshair'; return; }
+    });
+
+    canvas.addEventListener('click', e => {
+      // Suppress click if a drag or pan just happened
+      if (S.isDragging || S.isPanning) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+      const dist = Math.hypot(sx - S.mouseDownX, sy - S.mouseDownY);
+      if (dist > DRAG_THRESHOLD) return; // was a drag, not a click
+
+      const w = s2w(sx, sy);
+      const hitAtom = atomAtScreen(sx, sy);
+
+      if (S.mode === 'place') {
+        if (hitAtom) {
+          // Click on placed atom → toggle bond mode from it
+          S.mode = 'bond';
+          syncModeButtons();
+          S.bondStart = hitAtom.id;
+          document.getElementById('canvas-hint').textContent = 'Click another atom to connect — or same atom to cancel';
+          draw(); return;
+        }
+        const mol = LEVELS[S.levelIdx].molecules[S.molIdx];
+        if (!mol.available.includes(S.selectedAtomSymbol)) return;
+        S.atoms.push({ id: S.nextId++, symbol: S.selectedAtomSymbol, x: w.x, y: w.y });
+        draw(); autoValidate(); return;
+      }
+
+      if (S.mode === 'bond') {
+        if (hitAtom) {
+          if (S.bondStart === null) {
+            S.bondStart = hitAtom.id;
+            document.getElementById('canvas-hint').textContent = 'Now click another atom to connect';
+          } else if (hitAtom.id === S.bondStart) {
+            S.bondStart = null;
+            document.getElementById('canvas-hint').textContent = 'Bond cancelled. Click an atom to start again.';
+          } else {
+            const exists = S.bonds.find(b => (b.from === S.bondStart && b.to === hitAtom.id) || (b.from === hitAtom.id && b.to === S.bondStart));
+            if (exists) {
+              // Accumulate bond order; absolute max is 6 (hypervalent like SF₆)
+              exists.order = Math.min(6, exists.order + S.bondOrder);
+            } else {
+              S.bonds.push({ id: S.nextId++, from: S.bondStart, to: hitAtom.id, order: S.bondOrder });
+            }
+            S.bondStart = null;
+            draw(); autoValidate(); return;
+          }
+        } else {
+          S.bondStart = null;
+          document.getElementById('canvas-hint').textContent = 'Click an atom to start a bond';
+        }
+        draw(); return;
+      }
+
+      if (S.mode === 'delete') {
+        if (hitAtom) {
+          S.atoms = S.atoms.filter(a => a.id !== hitAtom.id);
+          S.bonds = S.bonds.filter(b => b.from !== hitAtom.id && b.to !== hitAtom.id);
+        } else {
+          const hb = bondAtScreen(sx, sy);
+          if (hb) S.bonds = S.bonds.filter(b => b.id !== hb.id);
+        }
+        draw();
+      }
+    });
+
+    canvas.addEventListener('wheel', e => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+      zoomAt(mx, my, e.deltaY > 0 ? -0.1 : 0.1);
+    }, { passive: false });
+
+    canvas.addEventListener('mouseleave', () => {
+      S.hoverAtom = null; S.mouseX = undefined;
+      if (S.isDragging) { S.isDragging = false; S.dragAtom = null; }
+      if (S.isPanning) { S.isPanning = false; S.panStartX = undefined; }
+      canvas.style.cursor = 'crosshair';
+      draw();
+    });
+
+    function atomAtScreen(sx, sy) {
+      return S.atoms.find(a => { const r = ATOMS[a.symbol].radius * S.zoom, s = w2s(a.x, a.y); return Math.hypot(sx - s.x, sy - s.y) <= r; });
+    }
+    function bondAtScreen(sx, sy) {
+      return S.bonds.find(bond => {
+        const a = S.atoms.find(at => at.id === bond.from), b = S.atoms.find(at => at.id === bond.to);
+        if (!a || !b) return false;
+        const as = w2s(a.x, a.y), bs = w2s(b.x, b.y);
+        const dx = bs.x - as.x, dy = bs.y - as.y, l2 = dx * dx + dy * dy;
+        if (l2 < 1) return false;
+        const t = Math.max(0, Math.min(1, ((sx - as.x) * dx + (sy - as.y) * dy) / l2));
+        return Math.hypot(sx - (as.x + t * dx), sy - (as.y + t * dy)) < 8;
+      });
+    }
+
+    // ══════════════════════════════════════════════
+    // ZOOM / ALIGN / FIT
+    // ══════════════════════════════════════════════
+    function zoomAt(cx, cy, delta) {
+      const oz = S.zoom;
+      S.zoom = Math.max(.15, Math.min(5, S.zoom + delta));
+      const zr = S.zoom / oz;
+      S.panX = cx - zr * (cx - S.panX); S.panY = cy - zr * (cy - S.panY);
+      updateZoomLabel(); draw();
+    }
+    function zoomBy(d) { zoomAt(canvas.width / 2, canvas.height / 2, d); }
+    function updateZoomLabel() { document.getElementById('zoom-label').textContent = Math.round(S.zoom * 100) + '%'; }
+
+    function alignMolecule() {
+      if (S.atoms.length === 0) return;
+
+      // Canvas centre in world coords
+      const cx = (canvas.width / 2 - S.panX) / S.zoom;
+      const cy = (canvas.height / 2 - S.panY) / S.zoom;
+
+      if (S.atoms.length === 1) { S.atoms[0].x = cx; S.atoms[0].y = cy; draw(); return; }
+
+      // Build adjacency (undirected)
+      const adj = {};
+      S.atoms.forEach(a => { adj[a.id] = []; });
+      S.bonds.forEach(b => {
+        if (adj[b.from]) adj[b.from].push(b.to);
+        if (adj[b.to]) adj[b.to].push(b.from);
+      });
+
+      // Bond length — generous so siblings never overlap
+      const BOND = 110;
+
+      // Pick highest-degree atom as root for a nicer layout
+      const root = S.atoms.reduce((best, a) =>
+        (adj[a.id] || []).length > (adj[best.id] || []).length ? a : best, S.atoms[0]);
+
+      const placed = {};
+      const visited = new Set();
+      placed[root.id] = { x: cx, y: cy };
+      visited.add(root.id);
+
+      // BFS with chemistry-aware angle spreading
+      const queue = [{ id: root.id, inAngle: null }];
+
+      while (queue.length > 0) {
+        const cur = queue.shift();
+        const neighbors = (adj[cur.id] || []).filter(n => !visited.has(n));
+        const n = neighbors.length;
+        if (n === 0) continue;
+
+        // Base direction: continue away from parent, or point right for root
+        const base = cur.inAngle !== null ? cur.inAngle : 0;
+
+        // Choose spread based on number of children — chemistry bond angles
+        let angles;
+        if (n === 1) {
+          angles = [base];
+        } else if (n === 2) {
+          // 120° apart (trigonal / sp2)
+          angles = [base - Math.PI / 3, base + Math.PI / 3];
+        } else if (n === 3) {
+          // ~120° each (tetrahedral projected, sp3)
+          angles = [base - Math.PI * 2 / 5, base, base + Math.PI * 2 / 5];
+        } else {
+          // 4+ neighbours: distribute evenly in front half
+          const totalSpread = Math.PI * 1.2;
+          angles = neighbors.map((_, i) => base - totalSpread / 2 + (totalSpread / (n - 1)) * i);
+        }
+
+        neighbors.forEach((nid, i) => {
+          visited.add(nid);
+          const ang = angles[i];
+          const px = placed[cur.id].x;
+          const py = placed[cur.id].y;
+          placed[nid] = { x: px + Math.cos(ang) * BOND, y: py + Math.sin(ang) * BOND };
+          queue.push({ id: nid, inAngle: ang });
+        });
+      }
+
+      // Place any disconnected atoms in a row below the layout
+      let fx = cx, fy = cy + BOND * 3;
+      S.atoms.forEach(a => {
+        if (!placed[a.id]) { placed[a.id] = { x: fx, y: fy }; fx += BOND; }
+      });
+
+      S.atoms.forEach(a => { a.x = placed[a.id].x; a.y = placed[a.id].y; });
+      draw();
+    }
+
+    function fitToCanvas() {
+      if (S.atoms.length === 0) return;
+      const pad = 80;
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      S.atoms.forEach(a => { const r = ATOMS[a.symbol].radius; minX = Math.min(minX, a.x - r); maxX = Math.max(maxX, a.x + r); minY = Math.min(minY, a.y - r); maxY = Math.max(maxY, a.y + r); });
+      const mw = maxX - minX || 1, mh = maxY - minY || 1;
+      S.zoom = Math.max(.15, Math.min(4, Math.min((canvas.width - pad * 2) / mw, (canvas.height - pad * 2) / mh)));
+      S.panX = (canvas.width - (minX + maxX) * S.zoom) / 2;
+      S.panY = (canvas.height - (minY + maxY) * S.zoom) / 2;
+      updateZoomLabel(); draw();
+    }
+
+    // ══════════════════════════════════════════════
+    // CONTROLS
+    // ══════════════════════════════════════════════
+    function setMode(m) {
+      S.mode = m; S.bondStart = null;
+      syncModeButtons();
+      const hints = {
+        place: 'Click canvas to place atom • Click a placed atom to start drawing a bond from it',
+        bond: 'Click an atom to start bond • click another atom to connect them',
+        delete: 'Click an atom or bond to remove it',
+      };
+      document.getElementById('canvas-hint').textContent = hints[m];
+      draw();
+    }
+    function syncModeButtons() {
+      ['place', 'bond', 'delete'].forEach(m => {
+        const b = document.getElementById('btn-' + m);
+        if (b) b.classList.toggle('active', S.mode === m);
+      });
+    }
+
+    function selectBond(order, btn) {
+      S.bondOrder = order;
+      document.querySelectorAll('.bond-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      // Clicking a bond type switches to bond drawing mode automatically
+      setMode('bond');
+    }
+
+    function clearCanvas() { S.atoms = []; S.bonds = []; S.bondStart = null; S.autoValidated = false; draw(); }
+
+    function toggleHint() { document.getElementById('hint-text').classList.toggle('show'); }
+
+    // ══════════════════════════════════════════════
+    // AUTO-VALIDATE
+    // ══════════════════════════════════════════════
+    function autoValidate() {
+      if (S.autoValidated) return;
+      if (S.atoms.length === 0) return;
+      const mol = LEVELS[S.levelIdx].molecules[S.molIdx];
+      if (mol.check(S.atoms, S.bonds)) {
+        S.autoValidated = true;
+        flashCard('ok');
+        const toast = document.getElementById('auto-toast');
+        toast.classList.add('show');
+        setTimeout(() => { toast.classList.remove('show'); setTimeout(() => checkMolecule(), 400); }, 1400);
+      }
+    }
+
+    function flashCard(type) {
+      const card = document.getElementById('target-card');
+      card.classList.remove('anim-ok', 'anim-err');
+      void card.offsetWidth; // reflow
+      card.classList.add(type === 'ok' ? 'anim-ok' : 'anim-err');
+    }
+
+    // ══════════════════════════════════════════════
+    // CHECK MOLECULE
+    // ══════════════════════════════════════════════
+    function checkMolecule() {
+      if (S.atoms.length === 0) { showFeedback(false, 'Canvas is empty!', 'Place atoms first, then connect them with bonds.'); return; }
+      const mol = LEVELS[S.levelIdx].molecules[S.molIdx];
+      const ok = mol.check(S.atoms, S.bonds);
+      if (ok) {
+        const key = `${S.levelIdx}-${S.molIdx}`;
+        if (!S.completed.has(key)) {
+          S.score += (mol.stars || 1) * 10;
+          document.getElementById('score-val').textContent = S.score;
+          S.completed.add(key);
+        }
+        spawnConfetti();
+        showFeedback(true, '✓ Correct!', `Excellent! You built ${mol.name} (${mol.formula}) correctly! ${mol.desc}`);
+        updateProgress(); buildNav();
+      } else {
+        flashCard('err');
+        S.autoValidated = false;
+        showFeedback(false, '✗ Not quite...', `Check your ${mol.name} structure. Hint: ${mol.hint}`);
+      }
+    }
+
+    function showFeedback(correct, title, msg) {
+      const ov = document.getElementById('feedback');
+      document.getElementById('fb-icon').textContent = correct ? '🎉' : '🔬';
+      const ft = document.getElementById('fb-title');
+      ft.textContent = title; ft.className = 'fb-title ' + (correct ? 'correct' : 'wrong');
+      document.getElementById('fb-msg').textContent = msg;
+      ov.classList.add('show');
+    }
+
+    function nextMolecule() {
+      document.getElementById('feedback').classList.remove('show');
+      document.getElementById('hint-text').classList.remove('show');
+      clearCanvas();
+      const level = LEVELS[S.levelIdx];
+      if (S.molIdx < level.molecules.length - 1) { S.molIdx++; }
+      else if (S.levelIdx < LEVELS.length - 1) { S.levelIdx++; S.molIdx = 0; }
+      else { showFeedback(true, '🏆 Champion!', 'You completed all levels! You are a true MolecuLab champion!'); return; }
+      loadMolecule();
+    }
+
+    // ══════════════════════════════════════════════
+    // LOAD MOLECULE
+    // ══════════════════════════════════════════════
+    function loadMolecule() {
+      const level = LEVELS[S.levelIdx], mol = level.molecules[S.molIdx];
+      S.autoValidated = false;
+      document.getElementById('mol-name').textContent = mol.name;
+      document.getElementById('mol-formula').textContent = mol.formula;
+      document.getElementById('mol-desc').textContent = mol.desc;
+      document.getElementById('hint-text').textContent = mol.hint;
+      document.getElementById('level-badge').textContent = `Level ${S.levelIdx + 1} — ${level.name}`;
+      buildAtomPalette(mol.available);
+      updateProgress(); buildNav();
+      setMode('place');
+      S.zoom = 1; S.panX = 0; S.panY = 0; updateZoomLabel(); draw();
+    }
+
+    // ══════════════════════════════════════════════
+    // SMART ATOM PLACEMENT
+    // ══════════════════════════════════════════════
+    function findNextPlacementPos() {
+      const STEP = 80; // world-unit spacing between atoms
+
+      if (S.atoms.length === 0) {
+        // Place first atom in the upper-left area of the visible canvas
+        const wx = (60 - S.panX) / S.zoom;
+        const wy = (80 - S.panY) / S.zoom;
+        return { x: wx, y: wy };
+      }
+
+      // Find the leftmost atom's X — anchor column
+      const anchorX = Math.min(...S.atoms.map(a => a.x));
+      // Find the bottommost atom's Y
+      const maxY = Math.max(...S.atoms.map(a => a.y));
+
+      const occupied = S.atoms.map(a => ({ x: a.x, y: a.y }));
+      function isFree(x, y) {
+        return occupied.every(o => Math.hypot(x - o.x, y - o.y) >= STEP * 0.9);
+      }
+
+      // Try rows downward from one step below the lowest atom, anchored to anchorX
+      for (let row = 1; row <= 30; row++) {
+        const y = maxY + STEP * row;
+        // Check anchor column first, then neighbours
+        for (let col = 0; col <= 8; col++) {
+          const candidates = col === 0
+            ? [anchorX]
+            : [anchorX + STEP * col, anchorX - STEP * col];
+          for (const x of candidates) {
+            if (isFree(x, y)) {
+              // Convert to screen to check visibility; if off-screen, pan to show it
+              const sx = x * S.zoom + S.panX;
+              const sy = y * S.zoom + S.panY;
+              const margin = 60;
+              if (sx < margin || sx > canvas.width - margin || sy < margin || sy > canvas.height - margin) {
+                // Pan so the new atom is visible (bottom-centre-ish)
+                S.panX = canvas.width * 0.35 - x * S.zoom;
+                S.panY = canvas.height * 0.65 - y * S.zoom;
+              }
+              return { x, y };
+            }
+          }
+        }
+      }
+
+      // Absolute fallback
+      return { x: anchorX, y: maxY + STEP };
+    }
+
+    // ══════════════════════════════════════════════
+    // ATOM PALETTE
+    // ══════════════════════════════════════════════
+    function buildAtomPalette(available) {
+      const container = document.getElementById('atom-palette');
+      container.innerHTML = '';
+      S.selectedAtomSymbol = available[0];
+      Object.values(ATOMS).forEach(info => {
+        const isAvail = available.includes(info.symbol);
+        const btn = document.createElement('button');
+        btn.className = 'atom-btn' + (isAvail ? '' : ' disabled');
+        btn.innerHTML = `<div class="atom-circle" style="background:${info.color};color:${info.textColor}">${info.symbol}</div>
+      <div class="atom-info"><div class="atom-symbol">${info.symbol}</div>
+      <div class="atom-fullname">${info.name}</div>
+      <div class="atom-valence">Valence: ${info.valence}</div></div>`;
+        if (isAvail) {
+          if (info.symbol === available[0]) btn.classList.add('selected');
+          btn.addEventListener('click', () => {
+            // 1. Mark this atom as selected
+            S.selectedAtomSymbol = info.symbol;
+            document.querySelectorAll('.atom-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+
+            // 2. Place atom on canvas at next smart position
+            const pos = findNextPlacementPos();
+            S.atoms.push({ id: S.nextId++, symbol: info.symbol, x: pos.x, y: pos.y });
+
+            // 3. Stay in place mode so the user can keep adding
+            setMode('place');
+            draw();
+            autoValidate();
+          });
+        }
+        container.appendChild(btn);
+      });
+    }
+
+    // ══════════════════════════════════════════════
+    // VALENCE TABLE
+    // ══════════════════════════════════════════════
+    function buildValenceTable() {
+      const c = document.getElementById('valence-table'); c.innerHTML = '';
+      Object.values(ATOMS).forEach(info => {
+        const r = document.createElement('div'); r.className = 'valence-row';
+        r.innerHTML = `<div class="v-atom" style="background:${info.color};color:${info.textColor}">${info.symbol}</div>
+      <div class="v-name">${info.name}</div>
+      <div class="v-val">${info.valence} bond${info.valence > 1 ? 's' : ''}</div>`;
+        c.appendChild(r);
+      });
+    }
+
+    // ══════════════════════════════════════════════
+    // LEFT NAV BUILDER
+    // ══════════════════════════════════════════════
+    function buildNav() {
+      const container = document.getElementById('nav-scroll');
+      container.innerHTML = '';
+      LEVELS.forEach((level, li) => {
+        const module = document.createElement('div');
+        module.className = 'nav-module' + (li === S.levelIdx ? ' open' : '');
+
+        const mStars = '★'.repeat(level.stars) + '☆'.repeat(3 - level.stars);
+        const mDone = isLevelCompleted(li);
+
+        const mHead = document.createElement('div');
+        mHead.className = 'nav-module-header';
+        mHead.innerHTML = `<span class="nav-toggle">▶</span>
+      <span class="nav-module-name">${level.name}</span>
+      <span class="nav-module-stars" title="Difficulty">${mStars}</span>
+      <span class="nav-module-tag">${level.tag}</span>`;
+        mHead.addEventListener('click', () => module.classList.toggle('open'));
+
+        const exDiv = document.createElement('div');
+        exDiv.className = 'nav-exercises';
+
+        level.molecules.forEach((mol, mi) => {
+          const key = `${li}-${mi}`;
+          const isDone = S.completed.has(key);
+          const isActive = li === S.levelIdx && mi === S.molIdx;
+          const exStars = '★'.repeat(mol.stars) + '☆'.repeat(3 - mol.stars);
+
+          const ex = document.createElement('div');
+          ex.className = 'nav-ex' + (isActive ? ' active' : '') + (isDone ? ' done' : '');
+          ex.innerHTML = `<div class="nav-done-dot"></div>
+        <div class="nav-ex-name">${mol.name}<span class="nav-ex-formula">${mol.formula}</span></div>
+        <span class="nav-ex-stars" title="Difficulty">${exStars}</span>`;
+          ex.addEventListener('click', () => {
+            S.levelIdx = li; S.molIdx = mi;
+            clearCanvas(); loadMolecule();
+          });
+          exDiv.appendChild(ex);
+        });
+
+        module.appendChild(mHead);
+        module.appendChild(exDiv);
+        container.appendChild(module);
+      });
+    }
+
+    // ══════════════════════════════════════════════
+    // PROGRESS
+    // ══════════════════════════════════════════════
+    function updateProgress() {
+      const total = LEVELS.reduce((s, l) => s + l.molecules.length, 0);
+      const done = S.completed.size;
+      document.getElementById('progress-fill').style.width = `${(done / total) * 100}%`;
+      document.getElementById('prog-cur').textContent = done;
+      document.getElementById('prog-total').textContent = `/ ${total} done`;
+    }
+    function isLevelCompleted(li) { return LEVELS[li].molecules.every((_, mi) => S.completed.has(`${li}-${mi}`)); }
+
+    // ══════════════════════════════════════════════
+    // CONFETTI
+    // ══════════════════════════════════════════════
+    function spawnConfetti() {
+      const area = document.querySelector('.canvas-area');
+      const cols = ['#00d4ff', '#b388ff', '#00ff9d', '#ffd166', '#ff6b6b'];
+      for (let i = 0; i < 35; i++) {
+        const el = document.createElement('div');
+        el.className = 'confetti-piece';
+        el.style.cssText = `left:${Math.random() * 100}%;bottom:${20 + Math.random() * 40}%;background:${cols[Math.floor(Math.random() * cols.length)]};animation-delay:${Math.random() * .5}s;animation-duration:${1 + Math.random()}s;transform:rotate(${Math.random() * 360}deg);`;
+        area.appendChild(el);
+        setTimeout(() => el.remove(), 2500);
+      }
+    }
+
+    // ══════════════════════════════════════════════
+    // INIT
+    // ══════════════════════════════════════════════
+    buildValenceTable();
+    buildNav();
+    loadMolecule();
+    updateProgress();
+    updateZoomLabel();
+  </script>
+</body>
+
+</html>
