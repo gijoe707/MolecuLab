@@ -223,3 +223,9 @@ All directly within the browser.
 # 📄 License
 
 This project is intended for **educational and research purposes**.
+
+---
+
+# 📄 Hosting
+
+This project is hosted at https://gijoe707.github.io/moleculab.
